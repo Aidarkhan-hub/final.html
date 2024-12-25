@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Quiz</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, black, #b4beb5);
+            padding: 20px;
+        }
+        .quiz-container {
+            max-width: 1000px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            text-align: center;
+        }
+        .question {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .options label {
+            display: block;
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        .btn {
+            margin-top: 20px;
+        }
+        .correct {
+            color: green;
+            font-weight: bold;
+        }
+        .incorrect {
+            color: red;
+            font-weight: bold;
+        }
+        .question-image {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container" id="quizContainer">
+        <div id="questionContainer">
+            <!-- Question will be dynamically inserted here -->
+        </div>
+        <div id="feedback" class="mt-3"></div>
+        <div class="d-flex justify-content-around mt-3">
+            <button id="checkAnswer" class="btn btn-primary">Check my answers</button>
+            <button id="explainAnswer" class="btn btn-secondary" style="display: none;">Explain</button>
+            <button id="showAll" class="btn btn-info" style="display: none;">Show all</button>
+        </div>
+        <button id="nextQuestion" class="btn btn-success mt-3" style="display: none;">Next Question</button>
+    </div>
+
+    <script>
+        // Quiz questions
+        const quizQuestions = [
+            {
+                question: "What is the DOM?",
+                image: "https://www.ionos.co.uk/digitalguide/fileadmin/DigitalGuide/Schaubilder/dom-tree-graphic.png",
+                options: ["Document Object Model", "Data Object Manager", "Dynamic Object Module", "Document Oriented Map"],
+                answer: 0,
+                explanation: "The Document Object Model (DOM) is the data representation of the objects that comprise the structure and content of a document on the web."
+            },
+            {
+                question: "Which programming language is used for web development?",
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhUonl9lXZF_k1MdKRdY5XpNvPJYSNjfTvBw&s",
+                options: ["Python", "JavaScript", "C++", "Ruby"],
+                answer: 1,
+                explanation: "JavaScript is a popular programming language used primarily for web development."
+            },
+            {
+                question: "A function in JavaScript that adds one or more elements to the end of an array and returns the new length of the array?",
+                image: "https://static.vecteezy.com/system/resources/thumbnails/000/107/880/small/free-man-pushing-vector.png",
+                options: ["push()", "pop()", "shift()", "unshift()"],
+                answer: 0,
+                explanation: "The push() method adds elements to the end of an array and returns the new length."
+            },
+            {
+                question: "The operator that checks whether its two operands are equal, returning a Boolean result.",
+                image: "data:image/jpeg;base64,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",
+                options: ["===", "==", "!==","!="],
+                answer: 0,
+                explanation: "The strict equality operator (`===`) checks for both value and type equality."
+            },
+            {
+                question: "What does HTML stand for?",
+                image: "data:image/png;base64,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",
+                options: ["Hyper Text Markup Language", "High Text Machine Language", "Hyperlinks and Text Markup Language", "Home Tool Markup Language"],
+                answer: 0,
+                explanation: "HTML stands for Hyper Text Markup Language, used to structure web pages."
+            },
+            {
+                question: "Which of the following is a CSS framework?",
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTh2jHmQIdGgQJfn0Z2jYPL0Il023dsqve6mA&s",
+                options: ["React", "Django", "Bootstrap", "Vue"],
+                answer: 2,
+                explanation: "Bootstrap is a popular CSS framework for designing responsive websites."
+            },
+            {
+                question: "Which of the following is a JavaScript library?",
+                image: "data:image/png;base64,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",
+                options: ["Laravel", "jQuery", "Flask", "Rails"],
+                answer: 1,
+                explanation: "jQuery is a fast, small, and feature-rich JavaScript library."
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+
+        const questionContainer = document.getElementById("questionContainer");
+        const feedbackContainer = document.getElementById("feedback");
+        const checkAnswerButton = document.getElementById("checkAnswer");
+        const explainButton = document.getElementById("explainAnswer");
+        const showAllButton = document.getElementById("showAll");
+        const nextQuestionButton = document.getElementById("nextQuestion");
+
+        function renderQuestion() {
+    feedbackContainer.textContent = "";
+
+    const questionObj = quizQuestions[currentQuestionIndex];
+    questionContainer.innerHTML = `
+        <img src="${questionObj.image}" alt="Question Image" class="question-image">
+        <div class="question">${questionObj.question}</div>
+        <div class="options">
+            ${questionObj.options.map((option, index) => `
+                <label>
+                    <input type="radio" name="option" value="${index}"> ${option}
+                </label>
+            `).join('')}
+        </div>
+    `;
+
+    // Управление видимостью кнопок
+    if (currentQuestionIndex < quizQuestions.length - 1) {
+        nextQuestionButton.style.display = "block"; // Показать Next
+        showAllButton.style.display = "none"; // Скрыть Show All
+    } else {
+        nextQuestionButton.style.display = "none"; // Скрыть Next
+        showAllButton.style.display = "block"; // Показать Show All
+    }
+
+    explainButton.style.display = "none"; // Скрыть Explain для нового вопроса
+}
+
+
+
+        function checkAnswer() {
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+
+            if (!selectedOption) {
+                feedbackContainer.textContent = "Please select an answer!";
+                feedbackContainer.className = "incorrect";
+                return;
+            }
+
+            const answer = parseInt(selectedOption.value);
+            const questionObj = quizQuestions[currentQuestionIndex];
+
+            if (answer === questionObj.answer) {
+                feedbackContainer.textContent = "Correct!";
+                feedbackContainer.className = "correct";
+            } else {
+                feedbackContainer.textContent = `Incorrect! The correct answer is: ${questionObj.options[questionObj.answer]}`;
+                feedbackContainer.className = "incorrect";
+            }
+
+            explainButton.style.display = "block";
+            if (currentQuestionIndex < quizQuestions.length - 1) {
+                nextQuestionButton.style.display = "block";
+            }
+        }
+
+        function explainAnswer() {
+            const questionObj = quizQuestions[currentQuestionIndex];
+            feedbackContainer.textContent = `Explanation: ${questionObj.explanation}`;
+            feedbackContainer.className = "correct";
+        }
+
+        function showAllAnswers() {
+            questionContainer.innerHTML = quizQuestions.map((q, index) => `
+                <div class="question">${index + 1}. ${q.question}</div>
+                <img src="${q.image}" alt="Question Image" class="question-image">
+                <div class="correct">Correct Answer: ${q.options[q.answer]}</div>
+                <div class="explanation">Explanation: ${q.explanation}</div>
+                <hr>
+            `).join('');
+            feedbackContainer.textContent = "";
+            checkAnswerButton.style.display = "none";
+            explainButton.style.display = "none";
+            showAllButton.style.display = "none";
+            nextQuestionButton.style.display = "none";
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < quizQuestions.length-1 ) {
+                currentQuestionIndex++;
+                renderQuestion();
+            }
+        }
+
+        checkAnswerButton.addEventListener("click", checkAnswer);
+        explainButton.addEventListener("click", explainAnswer);
+        showAllButton.addEventListener("click", showAllAnswers);
+        nextQuestionButton.addEventListener("click", nextQuestion);
+
+        renderQuestion();
+    </script>
+</body>
+</html>
